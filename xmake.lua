@@ -1,5 +1,5 @@
 
-set_project( "smse" )
+set_project( "SMSE" )
 set_version( "0.0.1" )
 
 if is_mode("Debug") then
@@ -20,3 +20,4 @@ add_requires( "minhook" )
 
 includes( "loader/" )
 includes( "smse/" )
+includes( "template_plugin/" )

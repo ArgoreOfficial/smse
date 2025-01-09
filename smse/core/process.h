@@ -4,9 +4,6 @@
 
 namespace smse {
 
-	uintptr_t getBaseAddr();
-
-	void _processInit();
-	void _processOnLaunch();
+uintptr_t getBaseAddr();
 
 }

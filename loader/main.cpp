@@ -72,8 +72,6 @@ HANDLE injectDll( sApplication _app, const char* _dllpath )
 
 int main()
 {
-	int pid = 18752; // process ID
-
 	const char* exePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Scrap Mechanic\\Release\\ScrapMechanic.exe";
 	const char* dirPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Scrap Mechanic\\Release\\";
 

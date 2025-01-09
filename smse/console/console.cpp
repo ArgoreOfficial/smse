@@ -1,23 +1,18 @@
 #include "console.h"
 
-#include <Windows.h>
-#include <stdio.h>
-
 #include <MinHook.h>
 
-FILE* console_handle = NULL;
-HANDLE hConsole;
 decltype( &AllocConsole ) fpAllocConsole = NULL;
+BOOL WINAPI DetourAllocConsole() { return TRUE; }
 
-BOOL WINAPI DetourAllocConsole() {
-	return TRUE;
-}
+static smse::Console g_console{};
 
-void smse::_logAlloc()
+void smse::Console::alloc()
 {
 	if ( !AllocConsole() )
 		return;
-	_logOpen();
+
+	open();
 	smse::log( "Allocated Console" );
 
 	if ( MH_CreateHook( &AllocConsole, &DetourAllocConsole, (LPVOID*)&fpAllocConsole ) != MH_OK )
@@ -27,17 +22,17 @@ void smse::_logAlloc()
 		return;
 }
 
-void smse::_logOpen()
+void smse::Console::open()
 {
-	_logClose();
-	freopen_s( &console_handle, "CONOUT$", "w", stdout );
+	close();
+	freopen_s( &m_handle, "CONOUT$", "w", stdout );
 }
 
-void smse::_logClose()
+void smse::Console::close()
 {
-	if ( !console_handle )
+	if ( !m_handle )
 		return;
 
-	fclose( console_handle );
-	console_handle = NULL;
+	fclose( m_handle );
+	m_handle = NULL;
 }

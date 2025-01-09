@@ -1,10 +1,12 @@
-target( "SMSELoader" )
-    set_kind( "binary" )
+local PLUGIN_NAME = "SMSEPlugin_Template"
+
+target( PLUGIN_NAME )
+    set_kind( "shared" )
     
 	if is_mode( "Debug" ) then 
-    	set_basename("SMSELoader_dbg")
+    	set_basename( PLUGIN_NAME .. "_dbg" )
 	else is_mode( "Release" )
-    	set_basename("SMSELoader")
+    	set_basename( PLUGIN_NAME )
 	end
 
     set_targetdir "../bin"

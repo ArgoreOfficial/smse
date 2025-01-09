@@ -1,24 +1,27 @@
 #pragma comment (lib, "user32.lib")
-#include <windows.h>
+#include <Windows.h>
+#include <corecrt_startup.h>
+#include <console/console.h>
 
-#include <stdio.h>
-#include <inttypes.h>
+#include <hooks/detour.h>
+#include <hooks/reloc.h>
+
+#include <hooks/hooks_lua.h>
+#include <hooks/hooks_playstate.h>
 
 #include <MinHook.h>
-
-#include "core/process.h"
-#include "console/console.h"
-#include "hooks/lua_hooks.h"
 
 bool onAttach()
 {
 	if ( MH_Initialize() != MH_OK )
 		return false;
 
-	smse::_logAlloc();
-	smse::_processInit();
+	smse::g_console.alloc();
 
-	smse::_hookLua();
+	smse::log( "Process Started" );
+
+	smse::hooks::initLua();
+	smse::hooks::initPlaystate();
 
 	if ( MH_EnableHook( MH_ALL_HOOKS ) != MH_OK )
 	{
