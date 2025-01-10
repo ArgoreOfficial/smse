@@ -2,10 +2,10 @@
 
 #include <sm/sm_api.h>
 
-static smse::sFuncDetour<lua_setfield>     _lua_setfield;
-static smse::sFuncDetour<lua_pushcclosure> _lua_pushcclosure;
-static smse::sFuncDetour<luaL_register>    _luaL_register;
-static smse::sFuncDetour<lua_newstate>     _lua_newstate;
+static smse::FuncDetour<lua_setfield>     _lua_setfield;
+static smse::FuncDetour<lua_pushcclosure> _lua_pushcclosure;
+static smse::FuncDetour<luaL_register>    _luaL_register;
+static smse::FuncDetour<lua_newstate>     _lua_newstate;
 
 static decltype( &luaL_loadstring ) _luaL_loadstring;
 static decltype( &lua_pcall )       _lua_pcall;
@@ -22,6 +22,7 @@ static void lua_pushcclosure_hook( lua_State* L, lua_CFunction fn, int n )
 
 static void luaL_register_hook( lua_State* L, const char* libname, const luaL_Reg* l )
 {
+	
 	if ( false && l != nullptr )
 	{
 		int n = 0;
@@ -45,6 +46,10 @@ static void luaL_register_hook( lua_State* L, const char* libname, const luaL_Re
 	}
 
 	_luaL_register.original( L, libname, l );
+
+	if ( libname )
+		smse::log( "Loaded library '%s'", libname );
+
 }
 
 
@@ -57,7 +62,7 @@ static lua_State* lua_newstate_hook( lua_Alloc f, void* ud )
 
 void smse::hooks::initLua()
 {
-	sFuncLoader luaLoader{ L"lua51.dll" };
+	FuncLoader luaLoader{ L"lua51.dll" };
 	_luaL_loadstring = luaLoader.load<&luaL_loadstring>( "luaL_loadstring" );
 	_lua_pcall       = luaLoader.load<&lua_pcall>      ( "lua_pcall" );
 

@@ -7,9 +7,9 @@ namespace smse
 {
 
 template<typename _Ty>
-struct sReloc
+struct Reloc
 {
-	sReloc( uintptr_t _offset ) :
+	Reloc( uintptr_t _offset ) :
 		m_ptr{ reinterpret_cast<_Ty>( smse::getBaseAddr() + _offset ) }
 	{
 			
@@ -18,9 +18,9 @@ struct sReloc
 	_Ty m_ptr;
 };
 
-struct sFuncLoader
+struct FuncLoader
 {
-	sFuncLoader( LPCWSTR _module )
+	FuncLoader( LPCWSTR _module )
 	{
 		hModule = GetModuleHandleW( _module );
 	}

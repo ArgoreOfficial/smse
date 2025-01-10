@@ -3,8 +3,8 @@
 #include <corecrt_startup.h>
 #include <console/console.h>
 
-#include <hooks/detour.h>
-#include <hooks/reloc.h>
+#include <util/detour.h>
+#include <util/reloc.h>
 
 #include <hooks/hooks_lua.h>
 #include <hooks/hooks_playstate.h>

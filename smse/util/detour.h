@@ -8,14 +8,14 @@
 namespace smse {
 
 template<auto _Fn, typename _Ty = decltype( _Fn ) >
-struct sFuncDetour {
-	sFuncDetour() 
+struct FuncDetour {
+	FuncDetour() 
 	{ }
 
-	sFuncDetour( uintptr_t _targetOffset ) : target{ reinterpret_cast<_Ty>( getBaseAddr() + _targetOffset ) }
+	FuncDetour( uintptr_t _targetOffset ) : target{ reinterpret_cast<_Ty>( getBaseAddr() + _targetOffset ) }
 	{ }
 
-	sFuncDetour( LPCWSTR _pszModule, LPCSTR _pszProcName, _Ty _fpDetour ):
+	FuncDetour( LPCWSTR _pszModule, LPCSTR _pszProcName, _Ty _fpDetour ):
 		pszModule{ _pszModule },
 		pszProcName{ _pszProcName },
 		detour{ _fpDetour }
@@ -33,8 +33,8 @@ struct sFuncDetour {
 		MH_CreateHook( pTarget, pDetour, (LPVOID*)&original );
 	}
 	
-	void createHook( LPVOID pDetour ) {
-		MH_CreateHook( target, pDetour, (LPVOID*)&original );
+	void createHook( _Ty pDetour ) {
+		MH_CreateHook( target, reinterpret_cast<LPVOID>( pDetour ), (LPVOID*)&original );
 	}
 
 
@@ -47,10 +47,10 @@ struct sFuncDetour {
 };
 
 
-template<typename _Ty> struct sLogDetour;
-template<typename _Ty> struct sLogDetour<_Ty*> : sLogDetour<_Ty> { };
+template<typename _Ty> struct LogDetour;
+template<typename _Ty> struct LogDetour<_Ty*> : LogDetour<_Ty> { };
 template<typename _Rty, typename... _Args>
-struct sLogDetour<_Rty( _Args... )>
+struct LogDetour<_Rty( _Args... )>
 {
 	typedef _Rty( *fptr_t )( _Args... );
 
@@ -75,4 +75,4 @@ struct sLogDetour<_Rty( _Args... )>
 
 }
 
-#define SMSE_LOG_LUA( _fn ) smse::sLogDetour<decltype( &_fn )> _##_fn; _##_fn.createHook( L"lua51", #_fn )
+#define SMSE_LOG_LUA( _fn ) smse::LogDetour<decltype( &_fn )> _##_fn; _##_fn.createHook( L"lua51", #_fn )
