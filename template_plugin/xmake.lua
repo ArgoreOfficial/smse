@@ -2,14 +2,11 @@ local PLUGIN_NAME = "SMSEPlugin_Template"
 
 target( PLUGIN_NAME )
     set_kind( "shared" )
+    add_packages( "luajit" )
     
-	if is_mode( "Debug" ) then 
-    	set_basename( PLUGIN_NAME .. "_dbg" )
-	else is_mode( "Release" )
-    	set_basename( PLUGIN_NAME )
-	end
+	set_basename( PLUGIN_NAME )
 
-    set_targetdir "../bin"
+    set_targetdir "../bin/Plugins/"
     set_objectdir "../build/obj"
 
     add_headerfiles( "**.h", "**.hpp" )

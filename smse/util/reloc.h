@@ -7,31 +7,36 @@ namespace smse
 {
 
 template<typename _Ty>
-struct Reloc
+struct ptr_reloc
 {
-	Reloc( uintptr_t _offset ) :
-		m_ptr{ reinterpret_cast<_Ty>( smse::getBaseAddr() + _offset ) }
+	ptr_reloc( uintptr_t _offset ) :
+		m_ptr{ reinterpret_cast<_Ty*>( smse::getBaseAddr() + _offset ) }
 	{
 			
 	}
 
-	_Ty m_ptr;
+	_Ty operator->() { return *m_ptr; }
+	_Ty operator*() { return *m_ptr; }
+
+	_Ty* m_ptr;
 };
 
-struct FuncLoader
+template<typename _Rty, typename... _Args>
+struct ptr_reloc<_Rty( _Args... )>
 {
-	FuncLoader( LPCWSTR _module )
+	typedef _Rty( *fptr_t )( _Args... );
+
+	ptr_reloc( uintptr_t _offset ) :
+		m_fptr{ reinterpret_cast<fptr_t>( smse::getBaseAddr() + _offset ) }
 	{
-		hModule = GetModuleHandleW( _module );
+
 	}
 
-	template<auto _Fn, typename _Ty = decltype( _Fn )>
-	_Ty load( const char* _fn )
-	{
-		return (_Ty)GetProcAddress( hModule, _fn );
+	_Rty operator()( _Args... _args ) {
+		m_fptr( _args... );
 	}
 
-	HMODULE hModule;
+	fptr_t m_fptr;
 };
 
 }

@@ -1,12 +1,19 @@
 #include "hooks_playstate.h"
 
-#include <sm_legacy/ContraptionCommon/LuaVM.h>
+#include <arg/func_loader.hpp>
+
 #include <plugin/plugin_api.h>
+
+#include <sm_legacy/ContraptionCommon/LuaVM.h>
+
+#include <sm_legacy/ContraptionCommon/Joint.h>
+#include <sm_legacy/ContraptionCommon/RotationalJoint.h>
 
 #include <util/detour.h>
 #include <util/reloc.h>
 
 #include <vector>
+#include <memory>
 
 /// TODO: figure out params
 void luaVM_loadLibraries_detour( sm::LuaVM* _this, void* _param_2, void* _param_3, sm::fp_luaopenlib_t** _loadFuncs );
@@ -18,6 +25,27 @@ static smse::FuncDetour<switchState_detour> _switchState{ 0x2da450 };
 void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLibEnvironment _environment );
 static smse::FuncDetour<openStandardLibraries_detour> _openStandardLibraries{ 0x54a7f0 };
 
+namespace lua
+{
+
+static decltype( &luaL_register ) L_register;
+static decltype( &lua_settop ) _settop;
+static decltype( &luaL_loadstring ) L_loadstring;
+static decltype( &lua_pcall ) _pcall;
+}
+
+// is this a wrap_Joint ?
+typedef std::shared_ptr<sm::RotationalJoint> bearing_sptr;
+
+bearing_sptr& popBearingFromLua_detour( bearing_sptr& _pOutPtr, lua_State* _luaState );
+static smse::FuncDetour<popBearingFromLua_detour> _popBearingFromLua{ 0x827140 };
+
+bearing_sptr& popBearingFromLua_detour( bearing_sptr& _pOutPtr, lua_State* _luaState )
+{
+	_popBearingFromLua.original( _pOutPtr, _luaState );
+	smse::log( "Got Bearing %f", _pOutPtr->m_angleReadOnly );
+	return _pOutPtr;
+}
 
 extern "C" {
 
@@ -27,50 +55,64 @@ extern "C" {
 		return 1;
 	}
 
-	static const struct luaL_Reg smseLib[] = {
+	static const luaL_Reg smseLib[] = {
 		{ "print", print },
 		{ NULL, NULL }  /* sentinel */
 	};
 
 }
 
-namespace lua
-{
-
-static decltype( &lua_gettop ) _gettop;
-static decltype( &luaL_register ) _L_register;
-static decltype( &lua_settop ) _settop;
-static decltype( &luaL_loadstring ) L_loadstring;
-static decltype( &lua_pcall ) _pcall;
-
+#define SMSE_ASSERT( _b, _msg ) if ( _b ) { \
+	smse::logCol( smse::LogColor::RED, _msg ); \
+	MessageBoxA( NULL, "Error", _msg, MB_OK ); \
+	Sleep( 1000000 ); \
+	return 0; \
 }
 
 int openSMSELibrary( sm::LuaVM* _luaVM )
 {
 	smse::log( "Loading SMSE Library" );
-
-	lua::_L_register( _luaVM->m_luaState, "smse", smseLib );
+	
+	int top1 = lua_gettop( _luaVM->m_luaState );
+	int top2 = lua_gettop( _luaVM->m_luaState );
+	smse::log( "%i %i", top1, top2 );
+	
+	lua::L_register( _luaVM->m_luaState, "smse", smseLib );
 	lua::_settop( _luaVM->m_luaState, -2 );
 
-	/// TODO: stack error check (see core load funcs)
-
+	int top3 = lua_gettop( _luaVM->m_luaState );
+	SMSE_ASSERT( top2 != top3, "top2 != top3")
+	int top4 = lua_gettop( _luaVM->m_luaState );
+	SMSE_ASSERT( top1 != top2, "top1 != top2" );
+	
+	smse::log( "Loaded SMSE Library" );
+	
 	return 1;
 }
 
 int openSMSEPluginLibraries( sm::LuaVM* _luaVM )
 {
 	smse::log( "Loading User Libraries" );
-
-
-	smse::LuaInterface& luaInterface = smse::SMSEInterface::getInstance().luaInterface;
-	const std::vector<smse::LuaLib>& pluginLibs = luaInterface.getPluginLibraries();
+	
+	smse::LuaInterface* luaInterface = smse::SMSEInterface::getInstance().getLuaInterface();
+	const std::vector<smse::LuaLib>& pluginLibs = luaInterface->getPluginLibraries();
 
 	for ( auto& lib : pluginLibs )
 	{
-		lua::_L_register( _luaVM->m_luaState, lib.name.c_str(), lib.lib );
-		lua::_settop( _luaVM->m_luaState, -2 );
-	}
 
+		int top1 = lua_gettop( _luaVM->m_luaState );
+		int top2 = lua_gettop( _luaVM->m_luaState );
+		
+		smse::log( "  - [%s]", lib.name.c_str() );
+		lua::L_register( _luaVM->m_luaState, lib.name.c_str(), lib.lib );
+		lua::_settop( _luaVM->m_luaState, -2 );
+
+		int top3 = lua_gettop( _luaVM->m_luaState );
+		SMSE_ASSERT( top2 != top3, "top2 != top3" );
+		int top4 = lua_gettop( _luaVM->m_luaState );
+		SMSE_ASSERT( top1 != top2, "top1 != top2" );
+
+	}
 
 	return 1;
 }
@@ -80,8 +122,10 @@ static sm::fp_luaopenlib_t _smseLib[] = {
 	openSMSEPluginLibraries
 };
 
-void luaVM_loadLibraries_detour( sm::LuaVM* _this, void* _param_2, void* _param_3, sm::fp_luaopenlib_t** _loadFuncs )
+void luaVM_loadLibraries_detour( sm::LuaVM* _luaVM, void* _param_2, void* _param_3, sm::fp_luaopenlib_t** _loadFuncs )
 {
+	smse::log( "LuaVM [%p]", _luaVM );
+
 	std::vector<sm::fp_luaopenlib_t*> testLoadFuncs{};
 	int n = 0;
 	while ( _loadFuncs[ n ] != nullptr )
@@ -90,7 +134,7 @@ void luaVM_loadLibraries_detour( sm::LuaVM* _this, void* _param_2, void* _param_
 	testLoadFuncs.push_back( _smseLib );
 	testLoadFuncs.push_back( nullptr );
 
-	_luaVM_loadLibraries.original( _this, _param_2, _param_3, testLoadFuncs.data() );
+	_luaVM_loadLibraries.original( _luaVM, _param_2, _param_3, testLoadFuncs.data() );
 }
 
 void switchState_detour( void* _this, int _state )
@@ -135,15 +179,15 @@ void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLi
 			int res = lua::_pcall( _luaVM->m_luaState, 0, 0xffffffff, 0 );
 
 			if ( res == 0 )
-				smse::log( "Installed SMSE Lua Functions" );
+				smse::log( "Installed SMSE library" );
 			else
-				smse::log( "Failed to SMSE Functions" );
+				smse::logCol( smse::RED, "Failed to install SMSE library" );
 
 		}
 	}
 
-	smse::LuaInterface& luaInterface = smse::SMSEInterface::getInstance().luaInterface;
-	const std::vector<smse::LuaLib>& pluginLibs = luaInterface.getPluginLibraries();
+	smse::LuaInterface* luaInterface = smse::SMSEInterface::getInstance().getLuaInterface();
+	const std::vector<smse::LuaLib>& pluginLibs = luaInterface->getPluginLibraries();
 
 	// install plugin libs
 	for ( auto& lib : pluginLibs )
@@ -157,26 +201,11 @@ void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLi
 			int res = lua::_pcall( _luaVM->m_luaState, 0, 0xffffffff, 0 );
 
 			if ( res == 0 )
-				smse::log( "Installed plugin '%s'", lib.name.c_str() );
+				smse::log( "Installed library '%s'", lib.name.c_str() );
 			else
-				smse::log( "Failed to install plugin '%s'", lib.name.c_str() );
+				smse::logCol( smse::RED, "Failed to install library '%s'", lib.name.c_str() );
 		}
 	}
-
-}
-
-extern "C" {
-
-	static int pluginFunction( lua_State* _luaState )
-	{
-		smse::log( "Cool Plugin Function" );
-		return 1;
-	}
-
-	static const struct luaL_Reg _pluginLib[] = {
-		{ "pluginFunction", pluginFunction },
-		{ NULL, NULL }  /* sentinel */
-	};
 
 }
 
@@ -186,16 +215,11 @@ void smse::hooks::initPlaystate()
 	_switchState.createHook( switchState_detour );
 	_openStandardLibraries.createHook( openStandardLibraries_detour );
 
-	smse::SMSEInterface* _pInterface = &smse::SMSEInterface::getInstance();
-
-	_pInterface->luaInterface.registerLib( "pluginLib", _pluginLib );
-
-
-	FuncLoader luaLoader{ L"lua51.dll" };
-	lua::_gettop = luaLoader.load<&lua_gettop>( "lua_gettop" );
-	lua::_L_register = luaLoader.load<&luaL_register>( "luaL_register" );
-	lua::_settop = luaLoader.load<&lua_settop>( "lua_settop" );
-	lua::L_loadstring = luaLoader.load<&luaL_loadstring>( "luaL_loadstring" );
-	lua::_pcall = luaLoader.load<&lua_pcall>( "lua_pcall" );
-
+	arg::func_loader luaLoader{ L"lua51.dll" };
+	lua::L_register = luaLoader.get<&luaL_register>( "luaL_register" );
+	lua::_settop = luaLoader.get<&lua_settop>( "lua_settop" );
+	lua::_settop = luaLoader.get<&lua_settop>( "lua_settop" );
+	lua::L_loadstring = luaLoader.get<&luaL_loadstring>( "luaL_loadstring" );
+	lua::_pcall = luaLoader.get<&lua_pcall>( "lua_pcall" );
+	_popBearingFromLua.createHook( popBearingFromLua_detour );
 }

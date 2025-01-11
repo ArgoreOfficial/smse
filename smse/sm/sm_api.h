@@ -5,8 +5,9 @@
 namespace sm
 {
 
-static smse::Reloc<void( __fastcall* )( char* )> _g_print{ 0x34d000 };
-
-void print( char* _str ) { _g_print.m_ptr( _str ); }
+static smse::ptr_reloc<void ( char* )> _g_print{ 0x34d000 };
+static void print( char* _str ) { 
+	_g_print( _str ); 
+}
 
 }

@@ -36,6 +36,7 @@ sApplication launch( std::string _exePath, std::string _dirPath )
 		_dirPath.c_str(),
 		&startupInfo, &procInfo ) )
 	{
+		printf( "Failed to CreateProcessA\n" );
 		return {};
 	}
 
@@ -47,7 +48,7 @@ sApplication launch( std::string _exePath, std::string _dirPath )
 
 HANDLE injectDll( sApplication _app, const char* _dllpath )
 {
-	printf( "Attempting to inject %s", _dllpath );
+	printf( "Attempting to inject %s\n", _dllpath );
 
 	LPVOID p = VirtualAllocEx( _app.hProcess, nullptr, 1 << 12, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
 	smseAssert( !p, "Failed to call VirtualAllocEx\n" );
@@ -61,6 +62,7 @@ HANDLE injectDll( sApplication _app, const char* _dllpath )
 	printf( "Loaded kernel32.dll\n" );
 
 	LPTHREAD_START_ROUTINE loadProcAddr = (LPTHREAD_START_ROUTINE)GetProcAddress( hKernel32dll, "LoadLibraryA" );
+	smseAssert( !loadProcAddr, "Failed to located LoadLibraryA\n" );
 	printf( "Loaded LoadLibraryA [%llu]\n", (uint64_t)loadProcAddr );
 
 	HANDLE hDllThread = CreateRemoteThread( _app.hProcess, nullptr, 0, loadProcAddr, p, 0, nullptr );
@@ -72,16 +74,25 @@ HANDLE injectDll( sApplication _app, const char* _dllpath )
 
 int main()
 {
-	const char* exePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Scrap Mechanic\\Release\\ScrapMechanic.exe";
-	const char* dirPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Scrap Mechanic\\Release\\";
+	#ifdef SMSE_DEBUG
+	const char* exePath = "C:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release/ScrapMechanic.exe";
+	const char* dirPath = "C:/Program Files (x86)/Steam/steamapps/common/Scrap Mechanic/Release/";
+	#else
+	const char* exePath = "./Release/ScrapMechanic.exe";
+	const char* dirPath = "./Release/";
+	#endif
 
 	sApplication app = launch( exePath, dirPath );
-	
+
 	if ( !app.hProcess )
 		return 1;
 	
-	HANDLE hSMSEThread = injectDll( app, "D:\\Dev\\smse\\bin\\smse_dbg.dll" );
-	
+	#ifdef SMSE_DEBUG
+	HANDLE hSMSEThread = injectDll( app, "D:\\Dev\\smse\\bin\\SMSE_debug.dll" );
+	#else
+	HANDLE hSMSEThread = injectDll( app, "SMSE.dll" );
+	#endif
+
 	Sleep( 500 );
 	ResumeThread( app.hThread );
 	

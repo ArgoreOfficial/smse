@@ -32,6 +32,8 @@ private:
 
 	bool m_hasInstalledPlugins = false;
 	std::vector<SMSEPlugin> m_plugins;
+
+	SMSEPlugin tryInstallPlugin( const std::string& _name );
 };
 
 }

@@ -4,7 +4,9 @@
  * 
  */
 
-#include <lua/lua.hpp>
+#pragma once
+
+#include <lua.hpp>
 
 namespace sm
 {

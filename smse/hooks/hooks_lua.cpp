@@ -1,14 +1,12 @@
 #include "hooks_lua.h"
 
+#include <lua.hpp>
 #include <sm/sm_api.h>
 
 static smse::FuncDetour<lua_setfield>     _lua_setfield;
 static smse::FuncDetour<lua_pushcclosure> _lua_pushcclosure;
 static smse::FuncDetour<luaL_register>    _luaL_register;
 static smse::FuncDetour<lua_newstate>     _lua_newstate;
-
-static decltype( &luaL_loadstring ) _luaL_loadstring;
-static decltype( &lua_pcall )       _lua_pcall;
 
 static void lua_setfield_hook( lua_State* L, int idx, const char* k )
 {
@@ -62,10 +60,6 @@ static lua_State* lua_newstate_hook( lua_Alloc f, void* ud )
 
 void smse::hooks::initLua()
 {
-	FuncLoader luaLoader{ L"lua51.dll" };
-	_luaL_loadstring = luaLoader.load<&luaL_loadstring>( "luaL_loadstring" );
-	_lua_pcall       = luaLoader.load<&lua_pcall>      ( "lua_pcall" );
-
 	_lua_setfield    .createHook( L"lua51", "lua_setfield",     &lua_setfield_hook );
 	_lua_pushcclosure.createHook( L"lua51", "lua_pushcclosure", &lua_pushcclosure_hook );
 	_luaL_register   .createHook( L"lua51", "luaL_register",    &luaL_register_hook );

@@ -1,6 +1,7 @@
 #pragma comment (lib, "user32.lib")
 #include <Windows.h>
 #include <corecrt_startup.h>
+
 #include <console/console.h>
 
 #include <util/detour.h>
@@ -8,6 +9,8 @@
 
 #include <hooks/hooks_lua.h>
 #include <hooks/hooks_playstate.h>
+
+#include <plugin/plugin_manager.h>
 
 #include <MinHook.h>
 
@@ -29,11 +32,16 @@ bool onAttach()
 		return false;
 	}
 
+	smse::log( "Installing Plugins... " );
+	smse::PluginManager::getInstance().init();
+
 	return true;
 }
 
 BOOL APIENTRY DllMain( HMODULE _hModule, DWORD _reason, LPVOID _reserved )
 {
+
+
 	switch ( _reason )
 	{
 	case DLL_PROCESS_ATTACH:

@@ -1,10 +1,16 @@
 #pragma once
 
-#include <lua/lua.hpp>
+#include <lua.hpp>
 #include <string>
 #include <vector>
 
 #include <util/singleton.h>
+
+#ifdef SMSE_CORE
+#define SMSEAPI __declspec(dllimport)
+#else
+#define SMSEAPI __declspec(dllexport)
+#endif
 
 namespace smse
 {
@@ -42,12 +48,17 @@ private:
 class SMSEInterface : public Singleton<SMSEInterface>
 {
 public:
+	LuaInterface* getLuaInterface() {
+		return &luaInterface;
+	}
+
+private:
 	LuaInterface luaInterface;
 };
 
 struct PluginInfo
 {
-	std::string name;
+	const char* name;
 };
 
 typedef bool ( *PluginOnInstallFptr_t )( const SMSEInterface* _pInterface, PluginInfo* _pInfo );
