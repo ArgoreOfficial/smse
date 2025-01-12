@@ -6,7 +6,7 @@ target( PLUGIN_NAME )
     
 	set_basename( PLUGIN_NAME )
 
-    set_targetdir "../bin/Plugins/"
+    set_targetdir "../bin/$(mode)/SMSE/Plugins/"
     set_objectdir "../build/obj"
 
     add_headerfiles( "**.h", "**.hpp" )

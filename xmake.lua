@@ -5,13 +5,11 @@ set_version( "0.0.1" )
 if is_mode("Debug") then
     set_symbols "debug"
     set_optimize "none"
-    set_strip "none"
 
     add_defines( "SMSE_DEBUG" )
 elseif is_mode("Release") then 
     set_symbols "debug"
     set_optimize "fast"
-    set_strip "debug"
 
     add_defines( "SMSE_RELEASE" )
 end

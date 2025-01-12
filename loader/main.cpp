@@ -88,9 +88,9 @@ int main()
 		return 1;
 	
 	#ifdef SMSE_DEBUG
-	HANDLE hSMSEThread = injectDll( app, "D:\\Dev\\smse\\bin\\SMSE_debug.dll" );
+	HANDLE hSMSEThread = injectDll( app, "D:/Dev/smse/bin/Debug/SMSE/SMSE_debug.dll" );
 	#else
-	HANDLE hSMSEThread = injectDll( app, "SMSE.dll" );
+	HANDLE hSMSEThread = injectDll( app, "./SMSE/SMSE.dll" );
 	#endif
 
 	Sleep( 500 );

@@ -172,6 +172,8 @@ void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLi
 	/// TODO: move to pluginLib ?
 	if ( _environment == smse::LUA_LIB_ENV_GAME )
 	{
+		smse::log( "Installing SMSE Library" );
+
 		std::string str = constructLibraryEnvInstall( "smse", smseLib );
 
 		if ( lua::L_loadstring( _luaVM->m_luaState, str.c_str() ) == 0 )
@@ -179,7 +181,7 @@ void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLi
 			int res = lua::_pcall( _luaVM->m_luaState, 0, 0xffffffff, 0 );
 
 			if ( res == 0 )
-				smse::log( "Installed SMSE library" );
+				smse::log( "Installed SMSE Library" );
 			else
 				smse::logCol( smse::RED, "Failed to install SMSE library" );
 
@@ -195,13 +197,15 @@ void openStandardLibraries_detour( sm::LuaVM* _luaVM, void* param_2, smse::LuaLi
 		if ( _environment != lib.env )
 			continue;
 
+		smse::log( "Installing Library '%s'", lib.name.c_str() );
+
 		std::string str = constructLibraryEnvInstall( lib.name, lib.lib );
 		if ( lua::L_loadstring( _luaVM->m_luaState, str.c_str() ) == 0 )
 		{
-			int res = lua::_pcall( _luaVM->m_luaState, 0, 0xffffffff, 0 );
+			int res = lua::_pcall( _luaVM->m_luaState, 0, -1, 0 );
 
 			if ( res == 0 )
-				smse::log( "Installed library '%s'", lib.name.c_str() );
+				smse::logCol( smse::GREEN, "Installed Library '%s'", lib.name.c_str() );
 			else
 				smse::logCol( smse::RED, "Failed to install library '%s'", lib.name.c_str() );
 		}
@@ -216,10 +220,9 @@ void smse::hooks::initPlaystate()
 	_openStandardLibraries.createHook( openStandardLibraries_detour );
 
 	arg::func_loader luaLoader{ L"lua51.dll" };
-	lua::L_register = luaLoader.get<&luaL_register>( "luaL_register" );
-	lua::_settop = luaLoader.get<&lua_settop>( "lua_settop" );
-	lua::_settop = luaLoader.get<&lua_settop>( "lua_settop" );
+	lua::L_register   = luaLoader.get<&luaL_register>  ( "luaL_register" );
+	lua::_settop      = luaLoader.get<&lua_settop>     ( "lua_settop" );
 	lua::L_loadstring = luaLoader.get<&luaL_loadstring>( "luaL_loadstring" );
-	lua::_pcall = luaLoader.get<&lua_pcall>( "lua_pcall" );
+	lua::_pcall       = luaLoader.get<&lua_pcall>      ( "lua_pcall" );
 	_popBearingFromLua.createHook( popBearingFromLua_detour );
 }

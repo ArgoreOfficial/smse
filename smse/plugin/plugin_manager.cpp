@@ -9,9 +9,9 @@
 void smse::PluginManager::init()
 {
 	#ifdef SMSE_DEBUG
-	std::ifstream     file( "D:\\Dev\\smse\\bin\\Plugins\\_SMSELoadOrder.ini" );
+	std::ifstream     file( "D:/Dev/smse/bin/Debug/SMSE/_LoadOrder.ini" );
 	#else
-	std::ifstream     file( "D:\\Dev\\smse\\bin\\Plugins\\_SMSELoadOrder.ini" );
+	std::ifstream     file( "./SMSE/_LoadOrder.ini" );
 	#endif
 
 	if ( file.is_open() )
@@ -33,7 +33,16 @@ void smse::PluginManager::init()
 	}
 	else
 	{
-		smse::logCol( smse::RED, "!ERROR! Failed to locate Plugins/_SMSELoadOrder.ini" );
+		smse::logCol( smse::RED, "!ERROR! Failed to locate ./SMSE/_LoadOrder.ini. Creating it" );
+		#ifdef SMSE_DEBUG
+		std::ofstream file( "D:/Dev/smse/bin/Debug/SMSE/_LoadOrder.ini" );
+		file << "SMSEPlugin_Template\n";
+		#else
+		std::ofstream file( "./SMSE/_LoadOrder.ini" );
+		#endif
+		file.close();
+		init();
+		return;
 	}
 
 	m_hasInstalledPlugins = true;
@@ -64,8 +73,11 @@ const smse::PluginInfo* smse::PluginManager::getPluginInfo( const std::string& _
 smse::SMSEPlugin smse::PluginManager::tryInstallPlugin( const std::string& _name )
 {
 	SMSEPlugin plugin;
-
-	std::string path = "D:/Dev/smse/bin/Plugins/" + _name + ".dll";
+	#ifdef SMSE_DEBUG
+	std::string path = "D:/Dev/smse/bin/Debug/SMSE/Plugins/" + _name + ".dll";
+	#else
+	std::string path = "./SMSE/Plugins/" + _name + ".dll";
+	#endif
 	plugin.hModule = LoadLibraryA( path.c_str() );
 
 	if ( plugin.hModule == NULL )

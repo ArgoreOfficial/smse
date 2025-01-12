@@ -11,7 +11,7 @@ target( "SMSE" )
 
 	-- add_defines( "LUA_BUILD_AS_DLL" )
 	
-    set_targetdir "../bin"
+    set_targetdir "../bin/$(mode)/SMSE/"
     set_objectdir "../build/obj"
 
     add_headerfiles( "**.h", "**.hpp" )

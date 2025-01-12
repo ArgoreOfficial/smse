@@ -1,4 +1,8 @@
 ﻿.vscode
 .xmake
-bin
 build
+bin/Debug
+*.pdb
+*.exp
+*.ilk
+bin/Release/SMSE/Plugins/*.lib
